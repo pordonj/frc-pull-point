@@ -99,7 +99,7 @@ app.get('/:event', async (req, res) => {
       <h1>FRC PullPoint - Reinspection for ${event}</h1>
       <body>
         <p>Reinspection starts at match ${firstOfLast.match_number}.</p>
-        <p>The following teams will reinspect that match: ${teamsToPull.join(' ')}</p>
+        <p>The following teams will reinspect that match: <code>${teamsToPull.join(' ')}</code></p>
         <p>In the remaining matches, reinspect each team.</p>
         ${getFooter()}
       </body>
