@@ -9,27 +9,23 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 
+app.set('views', path.join(__dirname, 'templates'))
+app.set('view engine', 'ejs')
+
+const footerHtml = `
+<footer class="bg-dark text-light py-3 border-top border-secondary">
+  <div class="container text-center small">
+    <p class="mb-0">Report any issues or incorrect output on <a class="text-info" href="https://github.com/pordonj/frc-pull-point" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+  </div>
+</footer>
+`
+
 // Home route - HTML
 app.get('/', (req, res) => {
-  res.type('html').send(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8"/>
-        <title>FRC PullPoint</title>
-        <link rel="stylesheet" href="/style.css" />
-      </head>
-      <body>
-        <h1>Welcome to FRC PullPoint!</h1>
-        <p>To use, go to <code>[this_url]/[event_code]</code> for any event code that has had its match schedule generated.</p>
-        ${getFooter()}
-      </body>
-    </html>
-  `)
+  res.render('home', { footerHtml })
 })
 
 app.get('/:event', async (req, res) => {
-  
   var event = req.params.event;
 
   const teamsOptions = {
@@ -53,21 +49,7 @@ app.get('/:event', async (req, res) => {
 
   if(matches.length == 0)
   {
-    res.type('html').send(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8"/>
-          <title>FRC PullPoint - ${event}</title>
-          <link rel="stylesheet" href="/style.css" />
-        </head>
-        <h1>FRC PullPoint - Reinspection for ${event}</h1>
-        <body>
-          <p>Matches for this event have not yet been generated.</p>
-          ${getFooter()}
-        </body>
-      </html>
-    `)
+    res.render('noMatches', { event, footerHtml })
     return;
   }
 
@@ -75,44 +57,20 @@ app.get('/:event', async (req, res) => {
 
   var firstOfLast = qms[0]
 
-  console.log(firstOfLast)
-
   var possibleTeams = firstOfLast.alliances.blue.team_keys.concat(firstOfLast.alliances.red.team_keys)
 
-  var teamsInRest = []
+  var teamsInRest: string[] = []
 
   for (let i = 1; i < qms.length; i++) {
     teamsInRest = teamsInRest.concat(qms[i].alliances.blue.team_keys)
     teamsInRest = teamsInRest.concat(qms[i].alliances.red.team_keys)
   }
 
-  var teamsToPull = possibleTeams.filter(t => !teamsInRest.includes(t));
-
-  res.type('html').send(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8"/>
-        <title>FRC PullPoint - ${event}</title>
-        <link rel="stylesheet" href="/style.css" />
-      </head>
-      <h1>FRC PullPoint - Reinspection for ${event}</h1>
-      <body>
-        <p>Reinspection starts at match ${firstOfLast.match_number}.</p>
-        <p>The following teams will reinspect that match: <code>${teamsToPull.join(' ')}</code></p>
-        <p>In the remaining matches, reinspect each team.</p>
-        ${getFooter()}
-      </body>
-    </html>
-  `)
+  var teamsToPull = possibleTeams.filter((t: string) => !teamsInRest.includes(t));
+  var teamsDisplay = teamsToPull
+      .map((t: string) => t.replace(/^frc/i, ''))
+      .join(' ');
+  res.render('event', { event, firstMatch: String(firstOfLast.match_number), teams: teamsDisplay, footerHtml })
 })
-
-function getFooter() {
-  return `
-    <footer>
-      <p>Report any issues or incorrect output on <a href="https://github.com/pordonj/frc-pull-point">GitHub</a>.</p>
-    </footer>
-  `;
-}
 
 export default app
